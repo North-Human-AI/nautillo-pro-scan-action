@@ -73,9 +73,9 @@ function jsonRequest(method, url, headers, body) {
       res.on('data', (chunk) => { raw += chunk; });
       res.on('end', () => {
         try {
-          resolve({ status: res.statusCode, body: JSON.parse(raw) });
+          resolve({ status: res.statusCode, body: JSON.parse(raw), headers: res.headers });
         } catch {
-          resolve({ status: res.statusCode, body: raw });
+          resolve({ status: res.statusCode, body: raw, headers: res.headers });
         }
       });
     });
@@ -168,11 +168,14 @@ async function run() {
   const POLL_INTERVAL_MS = 20_000;
   const deadline = Date.now() + timeoutSec * 1_000;
   let lastStatus = '';
+  let nextPollMs = POLL_INTERVAL_MS;
+  let backoffMs = 60_000;
 
   info(`\nWaiting for scan to complete (timeout: ${timeoutSec}s)…`);
 
   while (Date.now() < deadline) {
-    await sleep(POLL_INTERVAL_MS);
+    await sleep(nextPollMs);
+    nextPollMs = POLL_INTERVAL_MS;
 
     let pollRes;
     try {
@@ -185,6 +188,16 @@ async function run() {
       warn(`Poll request failed: ${e.message} — retrying`);
       continue;
     }
+
+    if (pollRes.status === 429) {
+      const retryAfter = parseInt(((pollRes.headers || {})['retry-after'] || '0'), 10);
+      nextPollMs = retryAfter > 0 ? retryAfter * 1_000 : backoffMs;
+      backoffMs = Math.min(backoffMs * 2, 300_000);
+      warn(`Rate limited (HTTP 429) — retrying in ${Math.round(nextPollMs / 1000)}s`);
+      continue;
+    }
+
+    backoffMs = 60_000; // reset backoff on successful response
 
     if (pollRes.status !== 200) {
       warn(`Unexpected poll response (HTTP ${pollRes.status}) — retrying`);
