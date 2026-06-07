@@ -7,11 +7,24 @@ Automated web application security testing for your CI/CD pipeline. Triggers a [
 - **Structured outputs** — use finding counts in downstream steps
 - **Zero dependencies** — pure Node.js, no `npm install`
 
+## Requirements
+
+This action requires a **paid Nautillo Pro plan**. CI/CD API access is not available on the free Starter plan.
+
+| Plan | CI/CD triggers | Scan types available |
+|---|---|---|
+| Starter (Free) | Not available | — |
+| Professional (€69/mo) | 50 per day | `single_url` only |
+| Business (€149/mo) | 200 per day | `single_url` and `full_domain` |
+| Enterprise | Custom | `single_url` and `full_domain` |
+
+To upgrade, go to [nautillo.pro/pricing](https://nautillo.pro/pricing) and select Professional or Business.
+
 ## Getting started
 
 ### 1. Create a Nautillo Pro account
 
-Sign up at [nautillo.pro](https://nautillo.pro). A free trial is available — no credit card required.
+Sign up at [nautillo.pro](https://nautillo.pro). Start on the free Starter plan to explore the dashboard, then upgrade to Professional or Business to enable CI/CD access.
 
 ### 2. Verify your domain
 
@@ -48,7 +61,7 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 |---|---|---|---|
 | `api-key` | Yes | — | Nautillo Pro API key. Store as a repository secret. |
 | `url` | Yes | — | Target URL to scan. Must match a verified domain in your account. |
-| `scan-type` | No | `single_url` | `single_url` or `full_domain`. Full domain crawls up to 2,000 pages (Business plan). |
+| `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` crawls up to 2,000 pages and requires the **Business plan**. |
 | `fail-on` | No | `critical` | Minimum severity that fails the build: `critical`, `high`, `medium`, `low`, or `none`. |
 | `timeout` | No | `900` | Seconds to wait before the action times out. Use `3600` for full domain scans. |
 | `auth-type` | No | — | Authentication method for protected pages: `bearer`, `basic`, or `form`. |
