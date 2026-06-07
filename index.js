@@ -16,7 +16,7 @@ const fs = require('fs');
  * -------------------------------------------------------------------------- */
 
 function getInput(name, required) {
-  const key = 'INPUT_' + name.replace(/-/g, '_').toUpperCase();
+  const key = 'INPUT_' + name.replace(/ /g, '_').toUpperCase();
   const val = (process.env[key] || '').trim();
   if (required && !val) {
     console.log(`::error::Input '${name}' is required but was not provided.`);
