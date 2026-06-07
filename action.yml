@@ -79,5 +79,5 @@ outputs:
     description: 'JSON object with confirmed finding counts: {"critical":0,"high":2,"medium":3,"low":1}'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'index.js'
