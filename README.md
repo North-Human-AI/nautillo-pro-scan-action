@@ -7,7 +7,30 @@ Automated web application security testing for your CI/CD pipeline. Triggers a [
 - **Structured outputs** — use finding counts in downstream steps
 - **Zero dependencies** — pure Node.js, no `npm install`
 
-## Usage
+## Getting started
+
+### 1. Create a Nautillo Pro account
+
+Sign up at [nautillo.pro](https://nautillo.pro). A free trial is available — no credit card required.
+
+### 2. Verify your domain
+
+In the Nautillo Pro dashboard, go to **Settings → Domains** and add the domain you want to scan. Verification takes less than a minute (DNS TXT record or file upload).
+
+### 3. Generate an API key
+
+In the dashboard, go to **Settings → API Keys → Generate new key**. Copy the key — you will only see it once.
+
+### 4. Add the key to your GitHub repository
+
+1. Open your repository on GitHub
+2. Go to **Settings → Secrets and variables → Actions**
+3. Click **New repository secret**
+4. Name: `NAUTILLO_API_KEY`
+5. Value: paste your API key
+6. Click **Add secret**
+
+### 5. Add the workflow step
 
 ```yaml
 - name: Security scan
@@ -17,7 +40,7 @@ Automated web application security testing for your CI/CD pipeline. Triggers a [
     url: https://your-app.com
 ```
 
-> **Requires a Nautillo Pro account and API key.** Sign up at [nautillo.pro](https://nautillo.pro).
+The action will trigger a scan, wait for results, and fail the build if confirmed vulnerabilities are found at or above the `fail-on` threshold (default: `critical`).
 
 ## Inputs
 
