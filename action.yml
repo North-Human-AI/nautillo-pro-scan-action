@@ -1,0 +1,83 @@
+name: 'Nautillo Pro Security Scan'
+description: 'Automated web application security testing. Trigger a Nautillo Pro scan and fail the build on confirmed vulnerabilities.'
+author: 'Nautillo Pro'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  api-key:
+    description: 'Nautillo Pro API key. Store as a repository secret (never hardcode).'
+    required: true
+  url:
+    description: 'Target URL to scan. Must match a verified domain in your Nautillo Pro account.'
+    required: true
+  scan-type:
+    description: '"single_url" (default) or "full_domain". full_domain requires Business plan and crawls up to 2,000 pages.'
+    required: false
+    default: 'single_url'
+  fail-on:
+    description: 'Minimum severity that fails the build: "critical" (default), "high", "medium", "low", or "none".'
+    required: false
+    default: 'critical'
+  timeout:
+    description: 'Seconds to wait before the action times out. Default: 900 (15 min). Use 3600 for full_domain scans.'
+    required: false
+    default: '900'
+  auth-type:
+    description: 'Authentication method for scanning protected pages: "bearer", "basic", or "form". Omit for unauthenticated scans.'
+    required: false
+    default: ''
+  auth-token:
+    description: 'Bearer token (when auth-type is "bearer"). Store as a secret.'
+    required: false
+    default: ''
+  auth-username:
+    description: 'Username (when auth-type is "basic" or "form"). Store as a secret.'
+    required: false
+    default: ''
+  auth-password:
+    description: 'Password (when auth-type is "basic" or "form"). Store as a secret.'
+    required: false
+    default: ''
+  auth-login-url:
+    description: 'Login form URL (when auth-type is "form"). Example: https://staging.example.com/login'
+    required: false
+    default: ''
+  webhook-url:
+    description: 'Optional webhook URL to receive a signed POST when the scan completes.'
+    required: false
+    default: ''
+  webhook-secret:
+    description: 'HMAC secret for webhook signature verification. Omit to auto-generate.'
+    required: false
+    default: ''
+  api-url:
+    description: 'Override the Nautillo Pro API base URL. Leave as default unless directed by support.'
+    required: false
+    default: 'https://api.nautillo.pro/functions/v1'
+
+outputs:
+  scan-id:
+    description: 'UUID of the triggered scan.'
+  report-url:
+    description: 'URL to the full scan report on nautillo.pro.'
+  status:
+    description: 'Scan outcome: "passed", "failed", or "error".'
+  exit-code:
+    description: '0 = no findings at threshold, 1 = findings at threshold, 2 = scan error or timeout.'
+  critical:
+    description: 'Number of confirmed Critical severity findings.'
+  high:
+    description: 'Number of confirmed High severity findings.'
+  medium:
+    description: 'Number of confirmed Medium severity findings.'
+  low:
+    description: 'Number of confirmed Low severity findings.'
+  findings-json:
+    description: 'JSON object with confirmed finding counts: {"critical":0,"high":2,"medium":3,"low":1}'
+
+runs:
+  using: 'node20'
+  main: 'index.js'
