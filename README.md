@@ -11,12 +11,11 @@ Automated web application security testing for your CI/CD pipeline. Triggers a [
 
 This action requires a **paid Nautillo Pro plan**. CI/CD API access is not available on the free Starter plan.
 
-| Plan | CI/CD triggers | Scan types available |
+| Plan | CI/CD API access | Scan types available |
 |---|---|---|
 | Starter (Free) | Not available | — |
-| Professional (€69/mo) | 50 per day | `single_url` only |
-| Business (€149/mo) | 200 per day | `single_url` and `full_domain` |
-| Enterprise | Custom | `single_url` and `full_domain` |
+| Professional (€69/mo) | 5,000 API triggers per day | `single_url` and `full_domain` (4/month, up to 500 pages) |
+| Business (€149/mo) | Unlimited API triggers | `single_url` and `full_domain` (30/month, up to 2,000 pages) |
 
 To upgrade, go to [nautillo.pro/pricing](https://nautillo.pro/pricing) and select Professional or Business.
 
@@ -61,7 +60,7 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 |---|---|---|---|
 | `api-key` | Yes | — | Nautillo Pro API key. Store as a repository secret. |
 | `url` | Yes | — | Target URL to scan. Must match a verified domain in your account. |
-| `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` crawls up to 2,000 pages and requires the **Business plan**. |
+| `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` is available on **Professional** (4/month, up to 500 pages) and **Business** (30/month, up to 2,000 pages). |
 | `fail-on` | No | `critical` | Minimum severity that fails the build: `critical`, `high`, `medium`, `low`, or `none`. |
 | `timeout` | No | `900` | Seconds to wait before the action times out. Use `3600` for full domain scans. |
 | `auth-type` | No | — | Authentication method for protected pages: `bearer`, `basic`, or `form`. |
@@ -132,7 +131,7 @@ steps:
       auth-password: ${{ secrets.SCAN_TEST_PASSWORD }}
 ```
 
-### Full domain scan (Business plan)
+### Full domain scan (Professional or Business)
 
 ```yaml
 steps:
