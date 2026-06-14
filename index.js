@@ -114,11 +114,27 @@ async function run() {
   // --- Build authentication config ---
   let authentication;
   if (authType === 'bearer' && authToken) {
-    authentication = { type: 'bearer', token: authToken };
+    authentication = {
+      auth_type: 'bearer',
+      credentials: { token: authToken },
+    };
   } else if (authType === 'basic' && authUser) {
-    authentication = { type: 'basic', username: authUser, password: authPass };
+    authentication = {
+      auth_type: 'basic',
+      credentials: {
+        username: authUser,
+        password: authPass,
+      },
+    };
   } else if (authType === 'form' && loginUrl && authUser) {
-    authentication = { type: 'form', login_url: loginUrl, username: authUser, password: authPass };
+    authentication = {
+      auth_type: 'form',
+      credentials: {
+        login_url: loginUrl,
+        username: authUser,
+        password: authPass,
+      },
+    };
   } else if (authType && authType !== '') {
     warn(`auth-type is '${authType}' but required credentials are missing — scanning without authentication.`);
   }
