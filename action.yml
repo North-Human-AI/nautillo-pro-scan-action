@@ -11,7 +11,7 @@ inputs:
     description: 'Nautillo Pro API key. Store as a repository secret (never hardcode).'
     required: true
   url:
-    description: 'Target URL to scan. Must match a verified domain in your Nautillo Pro account.'
+    description: 'Target URL to scan.'
     required: true
   scan-type:
     description: '"single_url" (default) or "full_domain". full_domain requires Business plan and crawls up to 2,000 pages.'

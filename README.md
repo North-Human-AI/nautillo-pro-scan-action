@@ -25,15 +25,11 @@ To upgrade, go to [nautillo.pro/pricing](https://nautillo.pro/pricing) and selec
 
 Sign up at [nautillo.pro](https://nautillo.pro). Start on the free Starter plan to explore the dashboard, then upgrade to Professional or Business to enable CI/CD access.
 
-### 2. Verify your domain
-
-In the Nautillo Pro dashboard, go to **Settings → Domains** and add the domain you want to scan. Verification takes less than a minute (DNS TXT record or file upload).
-
-### 3. Generate an API key
+### 2. Generate an API key
 
 In the dashboard, go to **Settings → API Keys → Generate new key**. Copy the key — you will only see it once.
 
-### 4. Add the key to your GitHub repository
+### 3. Add the key to your GitHub repository
 
 1. Open your repository on GitHub
 2. Go to **Settings → Secrets and variables → Actions**
@@ -42,7 +38,7 @@ In the dashboard, go to **Settings → API Keys → Generate new key**. Copy the
 5. Value: paste your API key
 6. Click **Add secret**
 
-### 5. Add the workflow step
+### 4. Add the workflow step
 
 ```yaml
 - name: Security scan
@@ -59,7 +55,7 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 | Input | Required | Default | Description |
 |---|---|---|---|
 | `api-key` | Yes | — | Nautillo Pro API key. Store as a repository secret. |
-| `url` | Yes | — | Target URL to scan. Must match a verified domain in your account. |
+| `url` | Yes | — | Target URL to scan. |
 | `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` is available on **Professional** (4/month, up to 500 pages) and **Business** (30/month, up to 2,000 pages). |
 | `fail-on` | No | `critical` | Minimum severity that fails the build: `critical`, `high`, `medium`, `low`, or `none`. |
 | `timeout` | No | `900` | Seconds to wait before the action times out. Use `3600` for full domain scans. |
