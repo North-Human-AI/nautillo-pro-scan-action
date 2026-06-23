@@ -14,8 +14,8 @@ This action requires a **paid Nautillo Pro plan**. CI/CD API access is not avail
 | Plan | CI/CD API access | Scan types available |
 |---|---|---|
 | Starter (Free) | Not available | — |
-| Professional (€69/mo) | 5,000 API triggers per day | `single_url` and `full_domain` (4/month, up to 500 pages) |
-| Business (€149/mo) | Unlimited API triggers | `single_url` and `full_domain` (30/month, up to 2,000 pages) |
+| Professional (€69/mo) | 5,000 API triggers per day | `single_url` and `full_domain` (4/month, up to 1,000 pages) |
+| Business (€149/mo) | Unlimited API triggers | `single_url` and `full_domain` (30/month, up to 5,000 pages) |
 
 To upgrade, go to [nautillo.pro/pricing](https://nautillo.pro/pricing) and select Professional or Business.
 
@@ -56,7 +56,7 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 |---|---|---|---|
 | `api-key` | Yes | — | Nautillo Pro API key. Store as a repository secret. |
 | `url` | Yes | — | Target URL to scan. |
-| `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` is available on **Professional** (4/month, up to 500 pages) and **Business** (30/month, up to 2,000 pages). |
+| `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` is available on **Professional** (4/month, up to 1,000 pages) and **Business** (30/month, up to 5,000 pages). |
 | `fail-on` | No | `critical` | Minimum severity that fails the build: `critical`, `high`, `medium`, `low`, or `none`. |
 | `timeout` | No | `900` | Seconds to wait before the action times out. Use `3600` for full domain scans. |
 | `auth-type` | No | — | Authentication method for protected pages: `bearer`, `basic`, or `form`. |

@@ -14,7 +14,7 @@ inputs:
     description: 'Target URL to scan.'
     required: true
   scan-type:
-    description: '"single_url" (default) or "full_domain". full_domain requires Business plan and crawls up to 2,000 pages.'
+    description: '"single_url" (default) or "full_domain". full_domain available on Professional (4/month, up to 1,000 pages) and Business (30/month, up to 5,000 pages).'
     required: false
     default: 'single_url'
   fail-on:
