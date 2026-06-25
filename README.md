@@ -58,7 +58,7 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 | `url` | Yes | — | Target URL to scan. |
 | `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` is available on **Professional** (4/month, up to 1,000 pages) and **Business** (30/month, up to 5,000 pages). |
 | `fail-on` | No | `critical` | Minimum severity that fails the build: `critical`, `high`, `medium`, `low`, or `none`. |
-| `timeout` | No | `900` | Seconds to wait before the action times out. Use `3600` for full domain scans. |
+| `timeout` | No | `900` | Seconds to wait before the action times out. `full_domain` scans can take several hours — see [Long-running scans](#long-running-full-domain-scans). |
 | `auth-type` | No | — | Authentication method for protected pages: `bearer`, `basic`, or `form`. |
 | `auth-token` | No | — | Bearer token (when `auth-type` is `bearer`). Store as a secret. |
 | `auth-username` | No | — | Username (when `auth-type` is `basic` or `form`). Store as a secret. |
@@ -139,6 +139,56 @@ steps:
       scan-type: full_domain
       fail-on: high
       timeout: '3600'
+```
+
+### Long-running full domain scans
+
+`full_domain` scans crawl every page on your domain and can take **2–6 hours** depending on site size. GitHub Actions jobs have a default 6-hour limit, so a large site may exceed both the action `timeout` and the job limit.
+
+**Recommended pattern — webhook + `continue-on-error`:**
+
+Register a webhook endpoint (e.g. a GitHub Actions workflow triggered via `repository_dispatch`, a Slack incoming webhook, or your own server). The Nautillo Pro backend will POST the scan result to it when the scan finishes, regardless of whether the CI job is still running.
+
+```yaml
+steps:
+  - name: Trigger full domain scan
+    continue-on-error: true          # don't block CI if the poll times out
+    uses: North-Human-AI/nautillo-pro-scan-action@v1
+    with:
+      api-key: ${{ secrets.NAUTILLO_API_KEY }}
+      url: https://your-app.com
+      scan-type: full_domain
+      fail-on: high
+      timeout: '21600'               # 6h — matches GitHub Actions job limit
+      webhook-url: ${{ secrets.SCAN_WEBHOOK_URL }}
+      webhook-secret: ${{ secrets.SCAN_WEBHOOK_SECRET }}
+```
+
+The webhook POST body contains the same fields as the poll response (`scan_id`, `status`, `exit_code`, `findings_count`, `report_url`). Verify the signature using the `X-Nautillo-Signature` header (HMAC-SHA256 of the raw body with your `webhook-secret`).
+
+**Alternative — schedule scans outside CI:**
+
+For very large domains, run `full_domain` scans on a nightly schedule rather than on every push, and only block PRs with `single_url` scans:
+
+```yaml
+# .github/workflows/security-scan-nightly.yml
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC nightly
+
+jobs:
+  full-domain-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Nightly full domain scan
+        uses: North-Human-AI/nautillo-pro-scan-action@v1
+        with:
+          api-key: ${{ secrets.NAUTILLO_API_KEY }}
+          url: https://your-app.com
+          scan-type: full_domain
+          timeout: '21600'
+          webhook-url: ${{ secrets.SCAN_WEBHOOK_URL }}
+          webhook-secret: ${{ secrets.SCAN_WEBHOOK_SECRET }}
 ```
 
 ## Exit codes

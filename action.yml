@@ -22,7 +22,7 @@ inputs:
     required: false
     default: 'critical'
   timeout:
-    description: 'Seconds to wait before the action times out. Default: 900 (15 min). Use 3600 for full_domain scans.'
+    description: 'Seconds to wait before the action times out. Default: 900 (15 min). full_domain scans can take several hours — set to 21600 and use continue-on-error with a webhook for large sites.'
     required: false
     default: '900'
   auth-type:

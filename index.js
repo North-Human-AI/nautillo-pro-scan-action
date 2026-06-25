@@ -58,7 +58,7 @@ function fail(msg, exitCode) {
  * HTTP helper — uses only Node.js built-in https module
  * -------------------------------------------------------------------------- */
 
-function jsonRequest(method, url, headers, body) {
+function jsonRequest(method, url, headers, body, timeoutMs = 30_000) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
     const options = {
@@ -67,6 +67,7 @@ function jsonRequest(method, url, headers, body) {
       path: u.pathname + u.search,
       method,
       headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+      timeout: timeoutMs,
     };
     const req = https.request(options, (res) => {
       let raw = '';
@@ -78,6 +79,9 @@ function jsonRequest(method, url, headers, body) {
           resolve({ status: res.statusCode, body: raw, headers: res.headers });
         }
       });
+    });
+    req.on('timeout', () => {
+      req.destroy(new Error(`Request timed out after ${timeoutMs}ms`));
     });
     req.on('error', reject);
     if (body !== undefined) req.write(JSON.stringify(body));
