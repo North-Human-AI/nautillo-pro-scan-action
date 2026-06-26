@@ -217,6 +217,14 @@ async function run() {
       continue;
     }
 
+    if (pollRes.status >= 500) {
+      // Transient server-side error — apply backoff before retrying, do not reset backoff counter.
+      nextPollMs = backoffMs;
+      backoffMs = Math.min(backoffMs * 2, 300_000);
+      info(`  Poll: HTTP ${pollRes.status} (transient) — retrying in ${Math.round(nextPollMs / 1000)}s`);
+      continue;
+    }
+
     backoffMs = 60_000; // reset backoff on successful response
 
     if (pollRes.status !== 200) {
