@@ -169,7 +169,7 @@ async function run() {
   if (triggerRes.status !== 202) {
     const detail =
       typeof triggerRes.body === 'object'
-        ? triggerRes.body.message || JSON.stringify(triggerRes.body)
+        ? triggerRes.body.error || triggerRes.body.message || JSON.stringify(triggerRes.body)
         : String(triggerRes.body);
     fail(`Scan trigger failed (HTTP ${triggerRes.status}): ${detail}`, 2);
   }
