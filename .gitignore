@@ -1,0 +1,5 @@
+# Local Supabase CLI state — never commit
+supabase/
+.env
+.env.*
+node_modules/

@@ -1,5 +1,5 @@
 name: 'Nautillo Pro Security Scan'
-description: 'Automated web application security testing. Trigger a Nautillo Pro scan and fail the build on confirmed vulnerabilities.'
+description: 'Automated pentesting (DAST) in CI. Fails the build on confirmed vulnerabilities, each proven with the request and response.'
 author: 'Nautillo Pro'
 
 branding:
@@ -11,7 +11,7 @@ inputs:
     description: 'Nautillo Pro API key. Store as a repository secret (never hardcode).'
     required: true
   url:
-    description: 'Target URL to scan.'
+    description: 'Target URL to scan. Its domain must be verified in your Nautillo Pro account (Settings → Domains).'
     required: true
   scan-type:
     description: '"single_url" (default) or "full_domain". full_domain available on Professional (4/month, up to 1,000 pages) and Business (30/month, up to 5,000 pages).'

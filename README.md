@@ -1,9 +1,9 @@
 # Nautillo Pro Security Scan
 
-Automated web application security testing for your CI/CD pipeline. Triggers a [Nautillo Pro](https://nautillo.pro) scan, waits for results, and fails the build when confirmed vulnerabilities are found above your chosen severity threshold.
+Automated penetration testing (DAST) in your CI/CD pipeline. Triggers a [Nautillo Pro](https://nautillo.pro) scan, waits for results, and fails the build when confirmed vulnerabilities are found at or above your chosen severity. Every finding comes with proof: the exact request and response.
 
 - **No curl, no polling scripts** — single `uses:` step
-- **Confirmed exploit paths only** — not theoretical findings
+- **Proof for every finding** — confirmed exploit paths with the request and response, not theoretical findings
 - **Structured outputs** — use finding counts in downstream steps
 - **Zero dependencies** — pure Node.js, no `npm install`
 
@@ -25,11 +25,15 @@ To upgrade, go to [nautillo.pro/pricing](https://nautillo.pro/pricing) and selec
 
 Sign up at [nautillo.pro](https://nautillo.pro). Start on the free Starter plan to explore the dashboard, then upgrade to Professional or Business to enable CI/CD access.
 
-### 2. Generate an API key
+### 2. Verify your domain
+
+CI/CD scans run unattended, so the target's domain must be verified in your account. In the dashboard, go to **Settings → Domains**, add the domain you want to scan, and verify it with a DNS TXT record. Scans of unverified domains are rejected with `403 Domain is not verified`.
+
+### 3. Generate an API key
 
 In the dashboard, go to **Settings → API Keys → Generate new key**. Copy the key — you will only see it once.
 
-### 3. Add the key to your GitHub repository
+### 4. Add the key to your GitHub repository
 
 1. Open your repository on GitHub
 2. Go to **Settings → Secrets and variables → Actions**
@@ -38,7 +42,7 @@ In the dashboard, go to **Settings → API Keys → Generate new key**. Copy the
 5. Value: paste your API key
 6. Click **Add secret**
 
-### 4. Add the workflow step
+### 5. Add the workflow step
 
 ```yaml
 - name: Security scan
@@ -55,7 +59,7 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 | Input | Required | Default | Description |
 |---|---|---|---|
 | `api-key` | Yes | — | Nautillo Pro API key. Store as a repository secret. |
-| `url` | Yes | — | Target URL to scan. |
+| `url` | Yes | — | Target URL to scan. Its domain must be verified in your account. |
 | `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` is available on **Professional** (4/month, up to 1,000 pages) and **Business** (30/month, up to 5,000 pages). |
 | `fail-on` | No | `critical` | Minimum severity that fails the build: `critical`, `high`, `medium`, `low`, or `none`. |
 | `timeout` | No | `900` | Seconds to wait before the action times out. `full_domain` scans can take several hours — see [Long-running scans](#long-running-full-domain-scans). |
@@ -199,6 +203,14 @@ jobs:
 | `1` | Scan completed — confirmed findings found at or above the `fail-on` threshold |
 | `2` | Scan error, internal failure, or timeout |
 
+## Exit code 2: common causes
+
+| Message | Fix |
+|---|---|
+| `Domain "…" is not verified` | Verify the domain in **Settings → Domains** (see step 2). |
+| `Daily rate limit reached` | Professional allows 5,000 triggers per API key per 24 hours. |
+| `target_url must be a publicly reachable host` | Private IPs, `localhost` and internal hosts can't be scanned — use a public staging or preview URL. |
+
 ## License
 
-MIT
+[MIT](LICENSE) © NØRTH HŪMAN OÜ
