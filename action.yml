@@ -22,9 +22,13 @@ inputs:
     required: false
     default: 'critical'
   timeout:
-    description: 'Seconds to wait before the action times out. Default: 900 (15 min). full_domain scans can take several hours — set to 21600 and use continue-on-error with a webhook for large sites.'
+    description: 'Seconds to wait for the result, or "auto" to wait as long as the scan keeps progressing (up to 5h 45m, just under the GitHub job limit). Default: 900 (15 min). Progress and an estimated time left are printed for full_domain scans.'
     required: false
     default: '900'
+  wait:
+    description: '"true" (default) waits for the result and fails the build on findings. "false" starts the scan and finishes the job immediately — use for scheduled full_domain scans; results arrive in the report, dashboard and webhook.'
+    required: false
+    default: 'true'
   auth-type:
     description: 'Authentication method for scanning protected pages: "bearer", "basic", or "form". Omit for unauthenticated scans.'
     required: false
@@ -64,7 +68,7 @@ outputs:
   report-url:
     description: 'URL to the full scan report on nautillo.pro.'
   status:
-    description: 'Scan outcome: "passed", "failed", or "error".'
+    description: 'Scan outcome: "passed", "failed", "error", "timeout", or "started" (when wait is "false").'
   exit-code:
     description: '0 = no findings at threshold, 1 = findings at threshold, 2 = scan error or timeout.'
   critical:

@@ -89,6 +89,16 @@ function jsonRequest(method, url, headers, body, timeoutMs = 30_000) {
   });
 }
 
+// Just under GitHub-hosted runners' 6-hour job limit.
+const AUTO_TIMEOUT_SEC = 5 * 60 * 60 + 45 * 60;
+
+function formatDuration(sec) {
+  const s = Math.max(0, Math.round(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.round((s % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -108,7 +118,12 @@ async function run() {
   const authUser      = getInput('auth-username');
   const authPass      = getInput('auth-password');
   const loginUrl      = getInput('auth-login-url');
-  const timeoutSec    = Math.max(60, parseInt(getInput('timeout') || '900', 10));
+  // timeout: seconds, or "auto" — wait as long as the scan keeps progressing, up to just under
+  // GitHub's 6-hour job limit (the server itself stops scans that make no progress for 20 minutes).
+  const timeoutRaw    = (getInput('timeout') || '900').toLowerCase();
+  const autoTimeout   = timeoutRaw === 'auto';
+  const timeoutSec    = autoTimeout ? AUTO_TIMEOUT_SEC : Math.max(60, parseInt(timeoutRaw, 10) || 900);
+  const waitForResult = (getInput('wait') || 'true').toLowerCase() !== 'false';
   const apiBase       = (getInput('api-url') || 'https://api.nautillo.pro/functions/v1').replace(/\/+$/, '');
   const webhookUrl    = getInput('webhook-url');
   const webhookSecret = getInput('webhook-secret');
@@ -184,6 +199,28 @@ async function run() {
   setOutput('scan-id', scan_id);
   setOutput('report-url', report_url || '');
 
+  // --- Fire-and-forget: start the scan and finish the job (results in the dashboard / webhook) ---
+  if (!waitForResult) {
+    setOutput('status', 'started');
+    setOutput('exit-code', 0);
+    addJobSummary([
+      '## Nautillo Pro Security Scan — started',
+      '',
+      `| | |`,
+      `|---|---|`,
+      `| **Target** | ${targetUrl} |`,
+      `| **Scan type** | ${scanType} |`,
+      `| **Report** | [Open report](${report_url || ''}) (fills in as the scan runs) |`,
+      '',
+      webhookUrl ? 'The result will be sent to your webhook when the scan completes.' : 'Results appear in the report and your Nautillo Pro dashboard when the scan completes.',
+      '',
+    ].join('\n'));
+    info('');
+    info('Scan started (wait: false) — not waiting for the result.');
+    info(`  Report: ${report_url || scan_id}`);
+    return;
+  }
+
   // --- Poll for completion ---
   const POLL_INTERVAL_MS = 20_000;
   const deadline = Date.now() + timeoutSec * 1_000;
@@ -191,7 +228,12 @@ async function run() {
   let nextPollMs = POLL_INTERVAL_MS;
   let backoffMs = 60_000;
 
-  info(`\nWaiting for scan to complete (timeout: ${timeoutSec}s)…`);
+  info(autoTimeout
+    ? `\nWaiting for scan to complete (timeout: auto, up to ${formatDuration(timeoutSec)})…`
+    : `\nWaiting for scan to complete (timeout: ${timeoutSec}s)…`);
+  let lastProgressPct = -1;
+  let lastProgressLogAt = 0;
+  let etaWarned = false;
 
   while (Date.now() < deadline) {
     await sleep(nextPollMs);
@@ -236,6 +278,21 @@ async function run() {
     if (result.status && result.status !== lastStatus) {
       info(`  ${new Date().toISOString().slice(11, 19)}  ${result.status}`);
       lastStatus = result.status;
+    }
+
+    // Progress for full-domain / batched scans: log every 5 points or every 5 minutes.
+    const p = result.progress;
+    if (p && p.total > 0 && (p.percent >= lastProgressPct + 5 || Date.now() - lastProgressLogAt > 300_000)) {
+      const eta = typeof result.eta_seconds === 'number' ? ` · about ${formatDuration(result.eta_seconds)} left` : '';
+      info(`  ${new Date().toISOString().slice(11, 19)}  ${p.completed.toLocaleString('en-US')} of ${p.total.toLocaleString('en-US')} tests (${p.percent}%)${eta}`);
+      lastProgressPct = p.percent;
+      lastProgressLogAt = Date.now();
+      const remainingSec = (deadline - Date.now()) / 1000;
+      if (!etaWarned && typeof result.eta_seconds === 'number' && result.eta_seconds > remainingSec * 1.2) {
+        warn(`This scan is estimated to need about ${formatDuration(result.eta_seconds)} more, but the action stops waiting in ${formatDuration(remainingSec)}. ` +
+             `For large sites use 'wait: false' (results in the dashboard or webhook) or 'timeout: auto'.`);
+        etaWarned = true;
+      }
     }
 
     if (
@@ -312,12 +369,12 @@ async function run() {
     }
   }
 
-  // Client-side timeout
+  // Client-side timeout — the scan keeps running on the server; only this job stops waiting.
   setOutput('exit-code', 2);
   setOutput('status', 'timeout');
   fail(
-    `Scan did not complete within ${timeoutSec}s. ` +
-    `Check status: ${apiBase}/v1-scan-status?scan_id=${scan_id}`,
+    `Stopped waiting after ${formatDuration(timeoutSec)}; the scan continues on the server. ` +
+    `Results will appear in the report: ${report_url || scan_id}`,
     2
   );
 }

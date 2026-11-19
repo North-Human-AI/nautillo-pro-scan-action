@@ -62,7 +62,8 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 | `url` | Yes | — | Target URL to scan. Its domain must be verified in your account. |
 | `scan-type` | No | `single_url` | `single_url` or `full_domain`. `full_domain` is available on **Professional** (4/month, up to 1,000 pages) and **Business** (30/month, up to 5,000 pages). |
 | `fail-on` | No | `critical` | Minimum severity that fails the build: `critical`, `high`, `medium`, `low`, or `none`. |
-| `timeout` | No | `900` | Seconds to wait before the action times out. `full_domain` scans can take several hours — see [Long-running scans](#long-running-full-domain-scans). |
+| `timeout` | No | `900` | Seconds to wait for the result, or `auto` to wait while the scan keeps progressing (up to 5h 45m). See [Long-running scans](#long-running-full-domain-scans). |
+| `wait` | No | `true` | `false` starts the scan and finishes the job immediately — for scheduled `full_domain` scans. |
 | `auth-type` | No | — | Authentication method for protected pages: `bearer`, `basic`, or `form`. |
 | `auth-token` | No | — | Bearer token (when `auth-type` is `bearer`). Store as a secret. |
 | `auth-username` | No | — | Username (when `auth-type` is `basic` or `form`). Store as a secret. |
@@ -78,7 +79,7 @@ The action will trigger a scan, wait for results, and fail the build if confirme
 |---|---|
 | `scan-id` | UUID of the triggered scan. |
 | `report-url` | URL to the full scan report on nautillo.pro. |
-| `status` | Scan outcome: `passed`, `failed`, or `error`. |
+| `status` | Scan outcome: `passed`, `failed`, `error`, `timeout`, or `started` (with `wait: false`). |
 | `exit-code` | `0` = no findings at threshold, `1` = findings found, `2` = scan error or timeout. |
 | `critical` | Number of confirmed Critical severity findings. |
 | `high` | Number of confirmed High severity findings. |
@@ -142,58 +143,68 @@ steps:
       url: https://your-app.com
       scan-type: full_domain
       fail-on: high
-      timeout: '3600'
+      timeout: 'auto'
 ```
 
 ### Long-running full domain scans
 
-`full_domain` scans crawl every page on your domain and can take **2–6 hours** depending on site size. GitHub Actions jobs have a default 6-hour limit, so a large site may exceed both the action `timeout` and the job limit.
+`full_domain` scans test every discovered page and can take **from under an hour to several hours**, depending on the size of the site. While waiting, the action prints progress and an estimated time left:
 
-**Recommended pattern — webhook + `continue-on-error`:**
-
-Register a webhook endpoint (e.g. a GitHub Actions workflow triggered via `repository_dispatch`, a Slack incoming webhook, or your own server). The Nautillo Pro backend will POST the scan result to it when the scan finishes, regardless of whether the CI job is still running.
-
-```yaml
-steps:
-  - name: Trigger full domain scan
-    continue-on-error: true          # don't block CI if the poll times out
-    uses: North-Human-AI/nautillo-pro-scan-action@v1
-    with:
-      api-key: ${{ secrets.NAUTILLO_API_KEY }}
-      url: https://your-app.com
-      scan-type: full_domain
-      fail-on: high
-      timeout: '21600'               # 6h — matches GitHub Actions job limit
-      webhook-url: ${{ secrets.SCAN_WEBHOOK_URL }}
-      webhook-secret: ${{ secrets.SCAN_WEBHOOK_SECRET }}
+```
+  02:14:05  820 of 2,400 tests (34%) · about 55m left
 ```
 
-The webhook POST body contains the same fields as the poll response (`scan_id`, `status`, `exit_code`, `findings_count`, `report_url`). Verify the signature using the `X-Nautillo-Signature` header (HMAC-SHA256 of the raw body with your `webhook-secret`).
+Pick how the job should wait:
 
-**Alternative — schedule scans outside CI:**
+| Option | When to use |
+|---|---|
+| `wait: 'false'` | **Recommended for scheduled full-domain scans.** Starts the scan and finishes the job in seconds. Results appear in the report, your dashboard and your webhook. |
+| `timeout: 'auto'` | Wait as long as the scan keeps progressing (up to 5h 45m, just under GitHub's 6-hour job limit). The server stops scans that make no progress for 20 minutes. |
+| `timeout: '<seconds>'` | A fixed wait. If the estimate shows the scan won't finish in time, the action warns you. The scan keeps running on the server either way. |
 
-For very large domains, run `full_domain` scans on a nightly schedule rather than on every push, and only block PRs with `single_url` scans:
+**Recommended setup — gate every deploy with a quick scan, run the full domain on a schedule:**
 
 ```yaml
-# .github/workflows/security-scan-nightly.yml
+# .github/workflows/security-scan.yml — every push: minutes, blocks the build on findings
+on:
+  push:
+    branches: [main]
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: North-Human-AI/nautillo-pro-scan-action@v1
+        with:
+          api-key: ${{ secrets.NAUTILLO_API_KEY }}
+          url: https://staging.your-app.com
+          fail-on: high
+```
+
+```yaml
+# .github/workflows/security-scan-full.yml — full domain on a schedule
 on:
   schedule:
-    - cron: '0 2 * * *'   # 02:00 UTC nightly
-
+    - cron: '0 2 * * 0'     # weekly, Sundays 02:00 UTC
+    # - cron: '0 2 * * *'   # daily   (Business)
+    # - cron: '0 2 1 * *'   # monthly
+  workflow_dispatch:
 jobs:
   full-domain-scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Nightly full domain scan
-        uses: North-Human-AI/nautillo-pro-scan-action@v1
+      - uses: North-Human-AI/nautillo-pro-scan-action@v1
         with:
           api-key: ${{ secrets.NAUTILLO_API_KEY }}
           url: https://your-app.com
           scan-type: full_domain
-          timeout: '21600'
+          wait: 'false'
           webhook-url: ${{ secrets.SCAN_WEBHOOK_URL }}
           webhook-secret: ${{ secrets.SCAN_WEBHOOK_SECRET }}
 ```
+
+Full-domain scans count toward your plan's monthly allowance (Professional: 4, Business: 30), so choose a schedule that fits — weekly or monthly on Professional, up to daily on Business.
+
+**Webhook payload:** the POST body contains `scan_id`, `status`, `exit_code`, `findings_count` and `report_url`. Verify the signature using the `X-Nautillo-Signature` header (HMAC-SHA256 of the raw body with your `webhook-secret`).
 
 ## Exit codes
 
